@@ -36,11 +36,16 @@ module ShopifyTheme
       environment = 'default'
     end
 
-    if environment
-      @config = config[environment.to_sym]
-    else
-      @config = config
+    if !environment.empty?
+      if config.has_key?(environment.to_sym)
+        @config = config[environment.to_sym]
+        return @config
+      end
     end
+
+    @config = config
+
+    return @config
   end
 
   def self.path
