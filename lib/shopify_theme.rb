@@ -30,8 +30,14 @@ module ShopifyTheme
   def self.config
     config ||= YAML.load(File.read('config.yml'))
 
-    if config.has_key?(:environment)
-      @config = config[config[:environment].to_sym]
+    if FileTest.exists?('.environment')
+      environment ||= YAML.load(File.read('.environment'))
+    else
+      environment = 'default'
+    end
+
+    if environment
+      @config = config[environment.to_sym]
     else
       @config = config
     end
