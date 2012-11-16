@@ -27,14 +27,15 @@ module ShopifyTheme
     desc "environment ENV", "change the config environment"
     method_option :quiet, :type => :boolean, :default => false
     def environment(env='default')
-      config = YAML.load(File.read('config.yml'))
-      config[:environment] = env
-      
       if env == 'default'
-        config.delete(:environment)
+        if FileTest.exists?('.environment')
+          File.delete('.environment')
+        end
+        
+        return
       end
 
-      File.open('config.yml', 'w') {|f| f.write(config.to_yaml) }
+      File.open('.environment', 'w') {|f| f.write(env) }
     end
 
     desc "download FILE", "download the shops current theme assets"
