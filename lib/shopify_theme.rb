@@ -28,7 +28,13 @@ module ShopifyTheme
   end
 
   def self.config
-    @config ||= YAML.load(File.read('config.yml'))
+    config ||= YAML.load(File.read('config.yml'))
+
+    if config.has_key?(:environment)
+      @config = config[config[:environment].to_sym]
+    else
+      @config = config
+    end
   end
 
   def self.path
