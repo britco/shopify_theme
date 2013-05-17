@@ -1,6 +1,6 @@
 require 'thor'
 require 'yaml'
-YAML::ENGINE.yamler = 'syck'
+YAML::ENGINE.yamler = 'syck' if defined? Syck
 require 'abbrev'
 require 'base64'
 require 'fileutils'
@@ -11,7 +11,7 @@ module ShopifyTheme
   class Cli < Thor
     include Thor::Actions
 
-    BINARY_EXTENSIONS = %w(png gif jpg jpeg eot svg ttf woff swf)
+    BINARY_EXTENSIONS = %w(png gif jpg jpeg eot svg ttf woff swf ico)
     IGNORE = %w(config.yml)
 
     tasks.keys.abbrev.each do |shortcut, command|
@@ -65,7 +65,9 @@ module ShopifyTheme
     def replace(*keys)
       say("Are you sure you want to completely replace your shop theme assets? This is not undoable.", :yellow)
       if ask("Continue? (Y/N): ") == "Y"
-        remote_assets = keys.empty? ? ShopifyTheme.asset_list : keys
+        # only delete files on remote that are not present locally
+        # files present on remote and present locally get overridden anyway
+        remote_assets = keys.empty? ? (ShopifyTheme.asset_list - local_assets_list) : keys
         remote_assets.each do |asset|
           delete_asset(asset, options['quiet'])
         end
@@ -90,8 +92,8 @@ module ShopifyTheme
     method_option :quiet, :type => :boolean, :default => false
     method_option :keep_files, :type => :boolean, :default => false
     def watch
-      puts "Watching current folder:"
-      Listen.to('',:relative_paths => true) do |modified, added, removed|
+      puts "Watching current folder: #{Dir.pwd}"
+      Listen.to!(Dir.pwd, :relative_paths => true) do |modified, added, removed|
         modified.each do |filePath|
           send_asset(filePath, options['quiet']) if local_assets_list.include?(filePath)
         end
@@ -154,7 +156,9 @@ module ShopifyTheme
     end
 
     def errors_from_response(response)
-      response.parsed_response ? response.parsed_response["errors"].values.join(", ") : ""
+      if response.parsed_response
+        response.parsed_response["errors"] ? response.parsed_response["errors"].values.join(", ") : ""
+      end
     end
   end
 end
